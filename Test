@@ -1,0 +1,98 @@
+ public static testMethod void TestpopulateTechnicalFields(){
+        acc = APTS_LP_TestUtility.getNewAccount('ABM-REXEL, S.L.U.','Spain');
+        acc.BillingCountryCode = 'ES';
+        insert acc;
+
+        ABB_Location__c locat1 = APTS_PG_TEST_Utility.getABBLocationData('Manufacturing: PGTR-2401, Poland - Lodz');
+        insert locat1;
+
+        ABB_Location__c locat2 = new ABB_Location__c();
+        locat2.Name = 'locName';
+        locat2.Address__c = '1 Av des Victimes du 11 juin 1944 BP 303';
+        locat2.BU__c = 'EPBP-Building Products';
+        locat2.DIV__c = 'EP-Electrification Products';
+        locat2.Activity__c = 'Sales';
+        locat2.Region__c = null;
+        locat2.Product_Group__c = null;
+        insert locat2;
+
+        ABB_Location__c locat3 = new ABB_Location__c();
+        locat3.Name = 'locName';
+        locat3.Address__c = '1 Av des Victimes du 11 juin 1944 BP 303';
+        locat3.BU__c = 'EPBP-Building Products';
+        locat3.DIV__c = 'EP-Electrification Products';
+        locat3.Activity__c = 'Sales';
+        locat3.Region__c = 'Americas';
+        insert locat3;
+
+        ABB_Location__c locat4 = new ABB_Location__c();
+        locat4.Name = 'locName';
+        locat4.Address__c = '1 Av des Victimes du 11 juin 1944 BP 303';
+        locat4.BU__c = 'EPBP-Building Products';
+        locat4.DIV__c = 'EP-Electrification Products';
+        locat4.Activity__c = 'Sales';
+        locat4.Region__c = 'Asia, Middle East & Africa';
+        insert locat4;
+            
+        Product_Group__c productGroup1 = APTS_PG_TEST_Utility.getPrimaryProductGroup();
+        insert productGroup1;
+        
+        opp = APTS_PG_TEST_Utility.getOpportunity('Test Oppty');
+        opp.ABB_Location__c = locat1.Id;
+        opp.Product_Group__c = productGroup1.Id;
+        insert opp; 
+        
+        objEndUserProject = APTS_PG_TEST_Utility.getEndUserProject(acc.Id);
+        insert objEndUserProject;
+            
+        APTS_Language_Translation__c oLTranslation = APTS_PG_TEST_Utility.createLanguageTranslationRec();
+        insert oLTranslation;
+        
+        priceList = APTS_PG_TEST_Utility.getPriceList('Spain');
+        insert priceList;
+        
+        propSO = APTS_PG_TEST_Utility.getProposal(acc.id, locat1.Id, objEndUserProject.Id, opp.Id, priceList.Id);
+        propSO.APTS_ABB_Location_Bidding_unit__c = null;
+        propSO.APTS_Primary_Product_Group__c = null;
+        propSO.APTS_LP_Sales_Person__c = adminUser.id;
+        propSO.APTS_SAP_Reference_No__c = '1234';
+        propSO.APTS_Country__c = 'Spain';
+        propSO.APTS_Primary_Language_Translation__c = oLTranslation.Id;
+        test.startTest();
+        
+        insert propSO;
+        propSO = [SELECT Id, ABB_Location_LBU__c, ABB_Location_LPG__c, ABB_Location_Region__c, Primary_BU__c, Primary_PG__c FROM Apttus_Proposal__Proposal__c WHERE Id =: propSO.Id];
+        system.assertEquals(null, propSO.ABB_Location_LBU__c);
+        system.assertEquals(null, propSO.ABB_Location_LPG__c);
+        system.assertEquals(null, propSO.ABB_Location_Region__c);
+        system.assertEquals(null, propSO.Primary_BU__c);
+        system.assertEquals(null, propSO.Primary_PG__c);
+
+        propSO.APTS_ABB_Location_Bidding_unit__c = locat1.Id;
+        propSO.APTS_Primary_Product_Group__c = productGroup1.Id;
+        update propSO;
+        propSO = [SELECT Id, ABB_Location_LBU__c, ABB_Location_LPG__c, ABB_Location_Region__c, Primary_BU__c, Primary_PG__c FROM Apttus_Proposal__Proposal__c WHERE Id =: propSO.Id];
+        system.assertEquals('EPBP', propSO.ABB_Location_LBU__c);
+        system.assertEquals('3132', propSO.ABB_Location_LPG__c);
+        system.assertEquals('EUC', propSO.ABB_Location_Region__c);
+        system.assertEquals('PGHV', propSO.Primary_BU__c);
+        system.assertEquals('9999', propSO.Primary_PG__c);
+        
+        propSO.APTS_ABB_Location_Bidding_unit__c = locat2.Id;
+        update propSO;            
+        propSO = [SELECT Id, ABB_Location_LPG__c, ABB_Location_Region__c FROM Apttus_Proposal__Proposal__c WHERE Id =: propSO.Id];
+        system.assertEquals(null, propSO.ABB_Location_LPG__c);
+        system.assertEquals(null, propSO.ABB_Location_Region__c);
+
+        propSO.APTS_ABB_Location_Bidding_unit__c = locat3.Id;
+        update propSO;
+        propSO = [SELECT Id, ABB_Location_Region__c FROM Apttus_Proposal__Proposal__c WHERE Id =: propSO.Id];
+        system.assertEquals('AMC', propSO.ABB_Location_Region__c);
+
+        propSO.APTS_ABB_Location_Bidding_unit__c = locat4.Id;
+        update propSO;
+        propSO = [SELECT Id, ABB_Location_Region__c FROM Apttus_Proposal__Proposal__c WHERE Id =: propSO.Id];
+        system.assertEquals('AMA', propSO.ABB_Location_Region__c);
+
+        test.stopTest();
+    }
